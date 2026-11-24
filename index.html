@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="pageTitle">SnapWhats-live — Real-Time Chat, Voice Notes & Video Calls</title>
+  <meta name="description" content="SnapWhats-live is a free real-time messaging app for instant chat, voice notes, disappearing snaps, stories, and live video calls right in your browser." />
+  <meta name="application-name" content="SnapWhats-live" />
+  <meta property="og:site_name" content="SnapWhats-live" />
+  <meta property="og:title" content="SnapWhats-live — Real-Time Chat, Voice Notes & Video Calls" />
+  <meta property="og:description" content="Chat, send voice notes, share disappearing snaps, and make live video calls instantly on SnapWhats-live." />
+  <meta property="og:type" content="website" />
+  <!-- PASTE YOUR GOOGLE VERIFICATION META TAG ON THE LINE BELOW -->
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    :root {
+      --bg-app: #eae6df;
+      --bg-top-stripe: #00a884;
+      --bg-sidebar: #ffffff;
+      --bg-header: #f0f2f5;
+      --bg-search: #f0f2f5;
+      --bg-hover: #f5f6f6;
+      --bg-active-chat: #f0f2f5;
+      --bg-chat: #efeae2;
+      --bg-bubble-in: #ffffff;
+      --bg-bubble-out: #d9fdd3;
+      --bg-input: #ffffff;
+      --text-primary: #111b21;
+      --text-secondary: #667781;
+      --icon-color: #54656f;
+      --border-color: #e9edef;
+      --accent-green: #00a884;
+      --accent-snap: #fffc00;
+      --unread-badge: #25d366;
+      --tick-blue: #53bdeb;
+      --wallpaper-opacity: 0.06;
+    }
+
+    body.dark {
+      --bg-app: #0c1317;
+      --bg-top-stripe: #0c1317;
+      --bg-sidebar: #111b21;
+      --bg-header: #202c33;
+      --bg-search: #202c33;
+      --bg-hover: #202c33;
+      --bg-active-chat: #2a3942;
+      --bg-chat: #0b141a;
+      --bg-bubble-in: #202c33;
+      --bg-bubble-out: #005c4b;
+      --bg-input: #2a3942;
+      --text-primary: #e9edef;
+      --text-secondary: #8696a0;
+      --icon-color: #aebac1;
+      --border-color: #222d34;
+      --accent-green: #00a884;
+      --unread-badge: #00a884;
+      --wallpaper-opacity: 0.04;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 127px;
+      background-color: var(--bg-top-stripe);
+      z-index: 0;
+    }
+
+    /* ================= AUTH SCREEN ================= */
+    .auth-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(180deg, var(--bg-top-stripe) 0%, var(--bg-top-stripe) 160px, var(--bg-app) 160px, var(--bg-app) 100%);
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .auth-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .auth-card {
+      background-color: var(--bg-sidebar);
+      color: var(--text-primary);
+      width: 100%;
+      max-width: 420px;
+      border-radius: 16px;
+      padding: 26px 24px;
+      box-shadow: 0 14px 40px rgba(11, 20, 26, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+
+    .auth-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .auth-logo-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 15px;
+      background: linear-gradient(135deg, #00a884, #25d366);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 16px rgba(0, 168, 132, 0.35);
+      position: relative;
+    }
+
+    .auth-logo-snap-dot {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: var(--accent-snap);
+      border: 2px solid var(--bg-sidebar);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-header h1 { font-size: 21px; font-weight: 800; }
+    .auth-header p { font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+
+    .saved-accounts-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg-search);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .saved-account-chip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-sidebar);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      font-size: 12.5px;
+    }
+
+    .saved-account-chip:hover { border-color: var(--accent-green); }
+
+    .auth-tabs {
+      display: flex;
+      background-color: var(--bg-search);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    .auth-tab-btn.active {
+      background-color: var(--bg-sidebar);
+      color: var(--accent-green);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .auth-form { display: flex; flex-direction: column; gap: 10px; }
+    .auth-field { display: flex; flex-direction: column; gap: 4px; }
+    .auth-field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+    .auth-input {
+      width: 100%;
+      padding: 10px 13px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border-color);
+      background-color: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .auth-input:focus { border-color: var(--accent-green); }
+
+    .auth-msg {
+      font-size: 12.5px;
+      font-weight: 600;
+      display: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+
+    .auth-msg.error { display: block; background-color: rgba(239, 68, 68, 0.12); color: #ef4444; }
+    .auth-msg.success { display: block; background-color: rgba(34, 197, 94, 0.14); color: #16a34a; }
+
+    .auth-submit-btn {
+      background: linear-gradient(135deg, #00a884, #25d366);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3);
+      margin-top: 4px;
+    }
+
+    /* ================= MAIN APP WRAPPER ================= */
+    .app-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1600px;
+      height: 100vh;
+      display: flex;
+      background-color: var(--bg-sidebar);
+      box-shadow: 0 6px 18px rgba(11, 20, 26, 0.14);
+      overflow: hidden;
+    }
+
+    .app-wrapper.locked { display: none; }
+
+    @media (min-width: 1441px) {
+      .app-wrapper {
+        width: calc(100% - 36px);
+        height: calc(100vh - 36px);
+        border-radius: 6px;
+      }
+    }
+
+    .sidebar {
+      width: 34%;
+      min-width: 340px;
+      max-width: 460px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .sidebar-header, .chat-header {
+      height: 60px;
+      background-color: var(--bg-header);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .brand-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+
+    .online-counter-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      background-color: rgba(37, 211, 102, 0.16);
+      color: #16a34a;
+      padding: 4px 9px;
+      border-radius: 14px;
+      border: 1px solid rgba(37, 211, 102, 0.35);
+      cursor: pointer;
+    }
+
+    body.dark .online-counter-pill { color: #4ade80; }
+
+    .pulse-green-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      animation: pulse 1.4s infinite;
+    }
+
+    .my-peer-bar {
+      background-color: rgba(0, 168, 132, 0.08);
+      border-bottom: 1px solid var(--border-color);
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .peer-id-code {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 11.5px;
+      color: var(--accent-green);
+      background: var(--bg-sidebar);
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      user-select: all;
+      max-width: 145px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mini-action-btn {
+      background-color: var(--accent-green);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .mini-action-btn.secondary {
+      background-color: var(--bg-search);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    .mini-action-btn.danger { background-color: #ef4444; color: #fff; }
+    .header-actions { display: flex; align-items: center; gap: 2px; }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--icon-color);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .icon-btn:hover { background-color: rgba(134, 150, 160, 0.14); }
+    .icon-btn.recording { background-color: #ef4444; color: #fff; animation: pulse 1s infinite; }
+
+    .snap-cam-btn {
+      background-color: var(--accent-snap);
+      color: #111b21;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .search-container { padding: 8px 12px; background-color: var(--bg-sidebar); border-bottom: 1px solid var(--border-color); }
+
+    .search-box {
+      background-color: var(--bg-search);
+      border-radius: 8px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 10px;
+    }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .chat-list { flex: 1; overflow-y: auto; }
+
+    .empty-chats-box {
+      padding: 28px 18px;
+      text-align: center;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      line-height: 1.45;
+    }
+
+    .chat-item {
+      display: flex;
+      align-items: center;
+      padding: 11px 14px;
+      gap: 12px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .chat-item:hover { background-color: var(--bg-hover); }
+    .chat-item.active { background-color: var(--bg-active-chat); }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      user-select: none;
+      background-color: #00a884;
+    }
+
+    .avatar.sm { width: 34px; height: 34px; font-size: 13px; }
+
+    .online-dot {
+      position: absolute;
+      bottom: 1px;
+      right: 1px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background-color: #25d366;
+      border: 2px solid var(--bg-sidebar);
+    }
+
+    .online-dot.offline { background-color: #9ca3af; }
+
+    .chat-item-content {
+      flex: 1;
+      min-width: 0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 11px;
+    }
+
+    .chat-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+      gap: 6px;
+    }
+
+    .chat-name {
+      font-size: 15.5px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-time { font-size: 11.5px; color: var(--text-secondary); flex-shrink: 0; }
+    .chat-item-bottom { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+
+    .chat-preview {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .unread-badge {
+      background-color: var(--unread-badge);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 19px;
+      height: 19px;
+      border-radius: 10px;
+      padding: 0 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-chat);
+      position: relative;
+      height: 100%;
+    }
+
+    .chat-header-left { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .back-btn { display: none; }
+
+    .chat-contact-info h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .chat-contact-info span { font-size: 12px; color: var(--text-secondary); display: block; }
+    .chat-contact-info span.online-txt { color: #16a34a; font-weight: 600; }
+
+    .snap-toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 18px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-sidebar);
+      color: var(--text-secondary);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .snap-toggle-pill.active {
+      background-color: var(--accent-snap);
+      color: #111b21;
+      border-color: #e5e200;
+    }
+
+    .messages-container {
+      flex: 1;
+      position: relative;
+      overflow-y: auto;
+      padding: 18px 6%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .messages-list {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .system-banner {
+      align-self: center;
+      background-color: rgba(134, 150, 160, 0.16);
+      color: var(--text-secondary);
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      margin: 4px 0;
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .message-row { display: flex; flex-direction: column; max-width: 72%; position: relative; }
+    .message-row.incoming { align-self: flex-start; }
+    .message-row.outgoing { align-self: flex-end; }
+
+    .message-bubble {
+      padding: 7px 10px 8px 11px;
+      border-radius: 9px;
+      font-size: 14.2px;
+      line-height: 19.5px;
+      box-shadow: 0 1px 1px rgba(11, 20, 26, 0.12);
+      word-wrap: break-word;
+    }
+
+    .message-row.incoming .message-bubble { background-color: var(--bg-bubble-in); border-top-left-radius: 0; }
+    .message-row.outgoing .message-bubble { background-color: var(--bg-bubble-out); border-top-right-radius: 0; }
+
+    .voice-audio-player { height: 34px; max-width: 240px; margin: 4px 0; }
+
+    .snap-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #ec4899, #f43f5e);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .snap-card.opened {
+      background: transparent;
+      border: 1px dashed var(--text-secondary);
+      color: var(--text-secondary);
+      cursor: default;
+    }
+
+    .message-meta {
+      float: right;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 10px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .chat-footer {
+      min-height: 62px;
+      background-color: var(--bg-header);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 2;
+    }
+
+    .chat-footer input[type="text"] {
+      flex: 1;
+      height: 42px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      padding: 0 14px;
+      font-size: 14.5px;
+      background-color: var(--bg-input);
+      color: var(--text-primary);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(11, 20, 26, 0.85);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-card {
+      background-color: var(--bg-sidebar);
+      color: var(--text-primary);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 440px;
+      padding: 20px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-header { display: flex; justify-content: space-between; align-items: center; }
+
+    .modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background-color: var(--bg-input);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .primary-btn {
+      background-color: var(--accent-green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+    }
+
+    .call-card {
+      width: 100%;
+      max-width: 440px;
+      height: 540px;
+      border-radius: 20px;
+      background: #0b141a;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 20px;
+    }
+
+    .call-remote-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+
+    .call-local-pip {
+      position: absolute;
+      bottom: 95px;
+      right: 16px;
+      width: 110px;
+      height: 150px;
+      border-radius: 12px;
+      object-fit: cover;
+      transform: scaleX(-1);
+      border: 2px solid #fff;
+      z-index: 3;
+      background: #1e293b;
+    }
+
+    .call-top-info {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 12px 20px;
+      border-radius: 16px;
+    }
+
+    .call-controls { position: relative; z-index: 4; display: flex; gap: 14px; align-items: center; }
+
+    .call-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.22);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .call-btn.end { background: #ef4444; width: 58px; height: 58px; }
+
+    .toast-banner {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #111b21;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 999;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      transition: transform 0.25s ease;
+    }
+
+    .toast-banner.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; max-width: none; }
+      .chat-area { display: none; width: 100%; }
+      .app-wrapper.mobile-chat-open .sidebar { display: none; }
+      .app-wrapper.mobile-chat-open .chat-area { display: flex; }
+      .back-btn { display: inline-flex; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================= LOGIN & CREATE ACCOUNT SCREEN ================= -->
+  <section class="auth-screen" id="authScreen">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-circle">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.03 2 11c0 2.39 1.05 4.56 2.76 6.17L3.5 21.5l4.66-1.45C9.37 20.66 10.65 21 12 21c5.52 0 10-4.03 10-9s-4.48-10-10-10z"/>
+          </svg>
+          <span class="auth-logo-snap-dot">👻</span>
+        </div>
+        <h1>SnapWhats-live</h1>
+        <p id="authSubtitle">Real-time chat, voice notes, snaps &amp; live video calls — with instant online and message notifications.</p>
+      </div>
+
+      <div class="saved-accounts-box" id="savedAccountsBox" style="display:none;">
+        <span style="font-size:11.5px;font-weight:700;color:var(--text-secondary);">Saved Accounts on This Device:</span>
+        <div id="savedAccountsList" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tabSignIn">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="tabCreateAccount">Create Account</button>
+      </div>
+
+      <form class="auth-form" id="signInForm">
+        <div class="auth-field">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" class="auth-input" placeholder="e.g. chinedu@snapwhats.com" required />
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="auth-input" placeholder="Enter your password" required />
+        </div>
+        <div class="auth-field">
+          <label for="loginRoom">Shared Room Code</label>
+          <input type="text" id="loginRoom" class="auth-input" value="snapwhats-global" required />
+        </div>
+        <div class="auth-msg" id="signInMsg"></div>
+        <button type="submit" class="auth-submit-btn">Sign In &amp; Enable Notifications</button>
+      </form>
+
+      <form class="auth-form" id="createAccountForm" style="display:none;">
+        <div class="auth-field">
+          <label for="regName">Display Name</label>
+          <input type="text" id="regName" class="auth-input" placeholder="e.g. Chinedu, Maya, Alex..." required />
+        </div>
+        <div class="auth-field">
+          <label for="regEmail">Email Address</label>
+          <input type="email" id="regEmail" class="auth-input" placeholder="e.g. chinedu@snapwhats.com" required />
+        </div>
+        <div class="auth-field">
+          <label for="regPassword">Create Password</label>
+          <input type="password" id="regPassword" class="auth-input" placeholder="Choose a password" required />
+        </div>
+        <div class="auth-field">
+          <label for="regRoom">Shared Room Code</label>
+          <input type="text" id="regRoom" class="auth-input" value="snapwhats-global" required />
+        </div>
+        <div class="auth-msg" id="registerMsg"></div>
+        <button type="submit" class="auth-submit-btn">Create Account &amp; Start Chatting</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= MAIN APP WRAPPER ================= -->
+  <main class="app-wrapper locked" id="appWrapper">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <div class="avatar sm" id="myAvatar">ME</div>
+          <span id="myDisplayName">SnapWhats-live</span>
+        </div>
+        <div class="header-actions">
+          <span class="online-counter-pill" id="onlineCountPill" title="Online Contacts">
+            <span class="pulse-green-dot"></span>
+            <span id="onlineCountText">0 Online</span>
+          </span>
+          <button class="icon-btn" id="notifyPermBtn" title="Enable Desktop Notifications">🔔</button>
+          <button class="icon-btn" id="themeToggleBtn" title="Toggle Dark Mode">🌓</button>
+          <button class="icon-btn" id="logoutBtn" title="Log Out">🚪</button>
+        </div>
+      </div>
+
+      <div class="my-peer-bar">
+        <span>My ID: <span class="peer-id-code" id="myPeerIdText">Connecting...</span></span>
+        <div style="display:flex;gap:4px;">
+          <button class="mini-action-btn secondary" id="copyIdBtn">Copy ID</button>
+          <button class="mini-action-btn" id="openConnectModalBtn">+ Add Friend</button>
+        </div>
+      </div>
+
+      <div class="search-container">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="searchInput" placeholder="Search contacts..." />
+        </div>
+      </div>
+
+      <div class="chat-list" id="chatList"></div>
+    </aside>
+
+    <section class="chat-area">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <button class="icon-btn back-btn" id="mobileBackBtn">←</button>
+          <div class="avatar sm" id="activeAvatar">SW</div>
+          <div class="chat-contact-info">
+            <h2 id="activeChatName">Select or Add a Friend</h2>
+            <span id="activeChatStatus">Share your ID or click + Add Friend to connect live</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="snap-toggle-pill" id="snapModeToggle" title="Send disappearing Snap messages">👻 Snap Mode: OFF</button>
+          <button class="icon-btn" id="startVideoCallBtn" title="Live Video Call">📹</button>
+        </div>
+      </div>
+
+      <div class="messages-container" id="messagesContainer">
+        <div class="messages-list" id="messagesList">
+          <div class="system-banner">
+            Welcome to <strong>SnapWhats-live</strong>! You will receive instant sound &amp; popup alerts when friends come online or send a message.
+          </div>
+        </div>
+      </div>
+
+      <form class="chat-footer" id="messageForm">
+        <button type="button" class="icon-btn" id="voiceRecordBtn" title="Record Voice Note">🎤</button>
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" />
+        <button type="submit" class="primary-btn">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <!-- ADD FRIEND MODAL -->
+  <div class="modal-overlay" id="connectModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Connect to a Friend</h3>
+        <button class="icon-btn" id="closeConnectModalBtn">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);">Paste your friend's Peer ID below to connect in real time:</p>
+      <input type="text" id="friendPeerIdInput" class="modal-input" placeholder="e.g. sw-chinedu-4821" />
+      <button class="primary-btn" id="connectPeerBtn">Connect Live</button>
+    </div>
+  </div>
+
+  <!-- VIDEO CALL MODAL -->
+  <div class="modal-overlay" id="callModal">
+    <div class="call-card">
+      <video id="remoteVideo" class="call-remote-video" autoplay playsinline></video>
+      <video id="localVideo" class="call-local-pip" autoplay muted playsinline></video>
+      <div class="call-top-info">
+        <h3 id="callPartnerName">Video Call</h3>
+        <span id="callStatusText" style="font-size:12.5px;">Connecting...</span>
+      </div>
+      <div class="call-controls">
+        <button class="call-btn end" id="endCallBtn">📞</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-banner" id="toastBanner"></div>
+
+  <script>
+    // ================= REAL-TIME NOTIFICATIONS (ONLINE & NEW MESSAGE) =================
+    const NotifySystem = {
+      _toastTimer: null,
+
+      requestPermission() {
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission().then((perm) => {
+            if (perm === "granted") {
+              this.showToast("🔔 Desktop & background alerts enabled!");
+            }
+          });
+        }
+      },
+
+      playTone(type = "message") {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          if (type === "online") {
+            osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+            osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.08, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.35);
+          } else {
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.setValueAtTime(1046.5, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.28);
+          }
+        } catch (e) {}
+      },
+
+      showToast(text) {
+        const toast = document.getElementById("toastBanner");
+        if (!toast) return;
+        toast.textContent = text;
+        toast.classList.add("show");
+        clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(() => toast.classList.remove("show"), 3800);
+      },
+
+      showSystemNotification(title, body, onClickCallback) {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        if (document.visibilityState === "visible") return;
+
+        const notif = new Notification(title, { body, tag: title });
+        notif.onclick = () => {
+          window.focus();
+          notif.close();
+          if (typeof onClickCallback === "function") onClickCallback();
+        };
+      },
+
+      onUserOnline(userName) {
+        const msg = `🟢 ${userName} is now online!`;
+        this.playTone("online");
+        this.showToast(msg);
+        this.showSystemNotification("SnapWhats-live", msg);
+      },
+
+      onNewMessage(senderName, previewText, peerId) {
+        const clean = previewText || "Sent an attachment";
+        const msg = `💬 ${senderName}: ${clean}`;
+        this.playTone("message");
+        this.showToast(msg);
+        this.showSystemNotification(`New message from ${senderName}`, clean, () => {
+          if (peerId) selectChat(peerId);
+        });
+      }
+    };
+
+    // ================= APP STATE & STORAGE =================
+    let currentUser = null;
+    let peer = null;
+    let connections = {};
+    let contacts = {};
+    let messagesByPeer = {};
+    let activePeerId = null;
+    let snapMode = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let activeCall = null;
+    let localStream = null;
+
+    const STORAGE_ACCOUNTS = "snapwhats_accounts_v1";
+    const STORAGE_SESSION = "snapwhats_session_v1";
+
+    function getSavedAccounts() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_ACCOUNTS)) || []; }
+      catch { return []; }
+    }
+
+    function saveAccount(acc) {
+      const list = getSavedAccounts().filter(a => a.email !== acc.email);
+      list.unshift(acc);
+      localStorage.setItem(STORAGE_ACCOUNTS, JSON.stringify(list));
+    }
+
+    function renderSavedAccounts() {
+      const list = getSavedAccounts();
+      const box = document.getElementById("savedAccountsBox");
+      const container = document.getElementById("savedAccountsList");
+      if (!list.length) { box.style.display = "none"; return; }
+      box.style.display = "flex";
+      container.innerHTML = "";
+      list.forEach(acc => {
+        const chip = document.createElement("div");
+        chip.className = "saved-account-chip";
+        chip.innerHTML = `<span><strong>${acc.name}</strong> (${acc.email})</span><span style="color:var(--accent-green);font-weight:700;">Tap to enter →</span>`;
+        chip.onclick = () => launchApp(acc);
+        container.appendChild(chip);
+      });
+    }
+
+    // ================= AUTH HANDLERS =================
+    document.getElementById("tabSignIn").onclick = () => {
+      document.getElementById("tabSignIn").classList.add("active");
+      document.getElementById("tabCreateAccount").classList.remove("active");
+      document.getElementById("signInForm").style.display = "flex";
+      document.getElementById("createAccountForm").style.display = "none";
+    };
+
+    document.getElementById("tabCreateAccount").onclick = () => {
+      document.getElementById("tabCreateAccount").classList.add("active");
+      document.getElementById("tabSignIn").classList.remove("active");
+      document.getElementById("createAccountForm").style.display = "flex";
+      document.getElementById("signInForm").style.display = "none";
+    };
+
+    document.getElementById("createAccountForm").onsubmit = (e) => {
+      e.preventDefault();
+      const name = document.getElementById("regName").value.trim();
+      const email = document.getElementById("regEmail").value.trim().toLowerCase();
+      const password = document.getElementById("regPassword").value;
+      const room = document.getElementById("regRoom").value.trim();
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, "") || "user";
+      const peerId = `sw-${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const account = { name, email, password, room, peerId };
+      saveAccount(account);
+      launchApp(account);
+    };
+
+    document.getElementById("signInForm").onsubmit = (e) => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value;
+      const room = document.getElementById("loginRoom").value.trim();
+      const found = getSavedAccounts().find(a => a.email === email && a.password === password);
+      if (found) {
+        found.room = room;
+        saveAccount(found);
+        launchApp(found);
+      } else {
+        const msg = document.getElementById("signInMsg");
+        msg.className = "auth-msg error";
+        msg.textContent = "Account not found on this device. Switch to Create Account first.";
+      }
+    };
+
+    // ================= LAUNCH & PEERJS REAL-TIME ENGINE =================
+    function launchApp(account) {
+      currentUser = account;
+      localStorage.setItem(STORAGE_SESSION, JSON.stringify(account));
+      NotifySystem.requestPermission();
+
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("appWrapper").classList.remove("locked");
+      document.getElementById("myDisplayName").textContent = account.name;
+      document.getElementById("myAvatar").textContent = account.name.slice(0, 2).toUpperCase();
+      document.getElementById("myPeerIdText").textContent = account.peerId;
+
+      initPeer(account.peerId);
+      renderChatList();
+    }
+
+    function initPeer(myId) {
+      if (peer) peer.destroy();
+      peer = new Peer(myId);
+
+      peer.on("open", (id) => {
+        document.getElementById("myPeerIdText").textContent = id;
+        NotifySystem.showToast("✅ Connected live as " + id);
+      });
+
+      peer.on("connection", (conn) => setupConnection(conn));
+
+      peer.on("call", async (call) => {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          document.getElementById("localVideo").srcObject = localStream;
+          call.answer(localStream);
+          openCallUI(contacts[call.peer]?.name || call.peer);
+          call.on("stream", (remoteStream) => {
+            document.getElementById("remoteVideo").srcObject = remoteStream;
+            document.getElementById("callStatusText").textContent = "Connected Live";
+          });
+          activeCall = call;
+        } catch (err) {
+          NotifySystem.showToast("Camera/mic permission denied for incoming call.");
+        }
+      });
+    }
+
+    function connectToPeer(remoteId) {
+      if (!remoteId || remoteId === currentUser.peerId) return;
+      if (connections[remoteId] && connections[remoteId].open) {
+        selectChat(remoteId);
+        return;
+      }
+      const conn = peer.connect(remoteId, { reliable: true });
+      setupConnection(conn);
+      selectChat(remoteId);
+    }
+
+    function setupConnection(conn) {
+      const remoteId = conn.peer;
+      connections[remoteId] = conn;
+
+      conn.on("open", () => {
+        const wasOffline = !contacts[remoteId]?.online;
+        contacts[remoteId] = {
+          peerId: remoteId,
+          name: contacts[remoteId]?.name || remoteId,
+          online: true,
+          unread: contacts[remoteId]?.unread || 0,
+          lastMsg: contacts[remoteId]?.lastMsg || "Connected",
+          lastTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+
+        conn.send({ type: "hello", name: currentUser.name });
+
+        if (wasOffline) {
+          NotifySystem.onUserOnline(contacts[remoteId].name);
+        }
+        renderChatList();
+        updateActiveHeader();
+      });
+
+      conn.on("data", (data) => {
+        if (data.type === "hello") {
+          const prevName = contacts[remoteId]?.name;
+          contacts[remoteId] = {
+            ...(contacts[remoteId] || {}),
+            peerId: remoteId,
+            name: data.name || remoteId,
+            online: true
+          };
+          if (prevName !== data.name) {
+            NotifySystem.onUserOnline(data.name);
+          }
+          renderChatList();
+          updateActiveHeader();
+          return;
+        }
+
+        if (data.type === "chat" || data.type === "snap" || data.type === "voice") {
+          const senderName = contacts[remoteId]?.name || remoteId;
+          const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+          if (!messagesByPeer[remoteId]) messagesByPeer[remoteId] = [];
+          messagesByPeer[remoteId].push({
+            id: Date.now() + Math.random(),
+            incoming: true,
+            type: data.type,
+            text: data.text || "",
+            audioUrl: data.audioUrl || null,
+            opened: false,
+            time
+          });
+
+          const preview = data.type === "snap" ? "👻 Disappearing Snap"
+                        : data.type === "voice" ? "🎤 Voice Note"
+                        : data.text;
+
+          if (!contacts[remoteId]) {
+            contacts[remoteId] = { peerId: remoteId, name: senderName, online: true, unread: 0 };
+          }
+          contacts[remoteId].lastMsg = preview;
+          contacts[remoteId].lastTime = time;
+
+          const isViewingThisChat = (activePeerId === remoteId && document.visibilityState === "visible");
+          if (!isViewingThisChat) {
+            contacts[remoteId].unread = (contacts[remoteId].unread || 0) + 1;
+            NotifySystem.onNewMessage(senderName, preview, remoteId);
+          }
+
+          renderChatList();
+          if (activePeerId === remoteId) renderMessages();
+        }
+      });
+
+      conn.on("close", () => {
+        if (contacts[remoteId]) {
+          contacts[remoteId].online = false;
+          renderChatList();
+          updateActiveHeader();
+        }
+      });
+    }
+
+    // ================= UI RENDERING =================
+    function renderChatList() {
+      const listEl = document.getElementById("chatList");
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const all = Object.values(contacts).filter(c => c.name.toLowerCase().includes(query));
+      const onlineCount = Object.values(contacts).filter(c => c.online).length;
+
+      document.getElementById("onlineCountText").textContent = `${onlineCount} Online`;
+
+      if (!all.length) {
+        listEl.innerHTML = `<div class="empty-chats-box"><p>No contacts connected yet.<br>Click <strong>+ Add Friend</strong> and paste their Peer ID to chat live!</p></div>`;
+        return;
+      }
+
+      listEl.innerHTML = "";
+      all.forEach(c => {
+        const item = document.createElement("div");
+        item.className = "chat-item" + (c.peerId === activePeerId ? " active" : "");
+        item.innerHTML = `
+          <div class="avatar">
+            ${c.name.slice(0, 2).toUpperCase()}
+            <span class="online-dot ${c.online ? "" : "offline"}"></span>
+          </div>
+          <div class="chat-item-content">
+            <div class="chat-item-top">
+              <span class="chat-name">${c.name}</span>
+              <span class="chat-time">${c.lastTime || ""}</span>
+            </div>
+            <div class="chat-item-bottom">
+              <span class="chat-preview">${c.lastMsg || "Tap to chat"}</span>
+              ${c.unread > 0 ? `<span class="unread-badge">${c.unread}</span>` : ""}
+            </div>
+          </div>
+        `;
+        item.onclick = () => selectChat(c.peerId);
+        listEl.appendChild(item);
+      });
+    }
+
+    function selectChat(peerId) {
+      activePeerId = peerId;
+      if (contacts[peerId]) contacts[peerId].unread = 0;
+      document.getElementById("appWrapper").classList.add("mobile-chat-open");
+      renderChatList();
+      updateActiveHeader();
+      renderMessages();
+    }
+
+    function updateActiveHeader() {
+      const c = contacts[activePeerId];
+      if (!c) return;
+      document.getElementById("activeAvatar").textContent = c.name.slice(0, 2).toUpperCase();
+      document.getElementById("activeChatName").textContent = c.name;
+      const statusEl = document.getElementById("activeChatStatus");
+      statusEl.textContent = c.online ? "● Online now" : "Offline";
+      statusEl.className = c.online ? "online-txt" : "";
+    }
+
+    function renderMessages() {
+      const list = document.getElementById("messagesList");
+      const msgs = messagesByPeer[activePeerId] || [];
+      list.innerHTML = "";
+
+      msgs.forEach((m) => {
+        const row = document.createElement("div");
+        row.className = "message-row " + (m.incoming ? "incoming" : "outgoing");
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+
+        if (m.type === "snap") {
+          const card = document.createElement("div");
+          card.className = "snap-card" + (m.opened ? " opened" : "");
+          card.textContent = m.opened ? "👻 Snap opened & disappeared" : "👻 Tap to view disappearing Snap";
+          if (!m.opened) {
+            card.onclick = () => {
+              alert("👻 Disappearing Snap:\n\n" + m.text);
+              m.opened = true;
+              renderMessages();
+            };
+          }
+          bubble.appendChild(card);
+        } else if (m.type === "voice" && m.audioUrl) {
+          const audio = document.createElement("audio");
+          audio.controls = true;
+          audio.src = m.audioUrl;
+          audio.className = "voice-audio-player";
+          bubble.appendChild(audio);
+        } else {
+          const span = document.createElement("span");
+          span.textContent = m.text;
+          bubble.appendChild(span);
+        }
+
+        const meta = document.createElement("span");
+        meta.className = "message-meta";
+        meta.textContent = m.time;
+        bubble.appendChild(meta);
+
+        row.appendChild(bubble);
+        list.appendChild(row);
+      });
+
+      const container = document.getElementById("messagesContainer");
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // ================= SEND TEXT / SNAP / VOICE / VIDEO =================
+    document.getElementById("messageForm").onsubmit = (e) => {
+      e.preventDefault();
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text || !activePeerId) {
+        if (!activePeerId) NotifySystem.showToast("Select or add a friend first!");
+        return;
+      }
+
+      const conn = connections[activePeerId];
+      const type = snapMode ? "snap" : "chat";
+      const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      if (conn && conn.open) {
+        conn.send({ type, text });
+      } else {
+        NotifySystem.showToast("Friend is offline — saved locally.");
+      }
+
+      if (!messagesByPeer[activePeerId]) messagesByPeer[activePeerId] = [];
+      messagesByPeer[activePeerId].push({ id: Date.now(), incoming: false, type, text, time });
+      contacts[activePeerId].lastMsg = snapMode ? "👻 Sent a Snap" : text;
+      contacts[activePeerId].lastTime = time;
+
+      input.value = "";
+      renderChatList();
+      renderMessages();
+    };
+
+    document.getElementById("snapModeToggle").onclick = () => {
+      snapMode = !snapMode;
+      const btn = document.getElementById("snapModeToggle");
+      btn.classList.toggle("active", snapMode);
+      btn.textContent = snapMode ? "👻 Snap Mode: ON" : "👻 Snap Mode: OFF";
+    };
+
+    document.getElementById("voiceRecordBtn").onclick = async () => {
+      if (!activePeerId) return NotifySystem.showToast("Select a chat first!");
+      const btn = document.getElementById("voiceRecordBtn");
+
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        btn.classList.remove("recording");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const audioUrl = reader.result;
+            const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            if (connections[activePeerId]?.open) {
+              connections[activePeerId].send({ type: "voice", audioUrl });
+            }
+            if (!messagesByPeer[activePeerId]) messagesByPeer[activePeerId] = [];
+            messagesByPeer[activePeerId].push({ id: Date.now(), incoming: false, type: "voice", audioUrl, time });
+            contacts[activePeerId].lastMsg = "🎤 Voice Note";
+            contacts[activePeerId].lastTime = time;
+            renderChatList();
+            renderMessages();
+          };
+          reader.readAsDataURL(blob);
+          stream.getTracks().forEach(t => t.stop());
+        };
+        mediaRecorder.start();
+        btn.classList.add("recording");
+        NotifySystem.showToast("🎙️ Recording... Click mic again to send");
+      } catch {
+        NotifySystem.showToast("Microphone permission denied.");
+      }
+    };
+
+    document.getElementById("startVideoCallBtn").onclick = async () => {
+      if (!activePeerId || !connections[activePeerId]?.open) {
+        return NotifySystem.showToast("Friend must be online to start a video call.");
+      }
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById("localVideo").srcObject = localStream;
+        const call = peer.call(activePeerId, localStream);
+        openCallUI(contacts[activePeerId]?.name || activePeerId);
+        call.on("stream", (remoteStream) => {
+          document.getElementById("remoteVideo").srcObject = remoteStream;
+          document.getElementById("callStatusText").textContent = "Connected Live";
+        });
+        activeCall = call;
+      } catch {
+        NotifySystem.showToast("Camera/mic permission denied.");
+      }
+    };
+
+    function openCallUI(partnerName) {
+      document.getElementById("callPartnerName").textContent = partnerName;
+      document.getElementById("callModal").classList.add("open");
+    }
+
+    document.getElementById("endCallBtn").onclick = () => {
+      if (activeCall) activeCall.close();
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      document.getElementById("callModal").classList.remove("open");
+    };
+
+    // ================= CONTROLS & STARTUP =================
+    document.getElementById("copyIdBtn").onclick = () => {
+      navigator.clipboard.writeText(currentUser.peerId);
+      NotifySystem.showToast("📋 Copied your ID: " + currentUser.peerId);
+    };
+
+    document.getElementById("openConnectModalBtn").onclick = () => document.getElementById("connectModal").classList.add("open");
+    document.getElementById("closeConnectModalBtn").onclick = () => document.getElementById("connectModal").classList.remove("open");
+    document.getElementById("connectPeerBtn").onclick = () => {
+      const id = document.getElementById("friendPeerIdInput").value.trim();
+      if (id) {
+        connectToPeer(id);
+        document.getElementById("friendPeerIdInput").value = "";
+        document.getElementById("connectModal").classList.remove("open");
+      }
+    };
+
+    document.getElementById("notifyPermBtn").onclick = () => NotifySystem.requestPermission();
+    document.getElementById("themeToggleBtn").onclick = () => document.body.classList.toggle("dark");
+    document.getElementById("searchInput").oninput = renderChatList;
+    document.getElementById("mobileBackBtn").onclick = () => document.getElementById("appWrapper").classList.remove("mobile-chat-open");
+
+    document.getElementById("logoutBtn").onclick = () => {
+      localStorage.removeItem(STORAGE_SESSION);
+      if (peer) peer.destroy();
+      document.getElementById("appWrapper").classList.add("locked");
+      document.getElementById("authScreen").classList.remove("hidden");
+      renderSavedAccounts();
+    };
+
+    // Auto-login if session exists
+    const existingSession = localStorage.getItem(STORAGE_SESSION);
+    if (existingSession) {
+      try { launchApp(JSON.parse(existingSession)); } catch { renderSavedAccounts(); }
+    } else {
+      renderSavedAccounts();
+    }
+  </script>
+</body>
+</html>
